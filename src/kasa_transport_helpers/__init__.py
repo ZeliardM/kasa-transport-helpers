@@ -1,6 +1,6 @@
 """kasa_transport_helpers public API."""
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 from .noc import NOCClient, TPAPNOCData
 from .spake import get_curve_and_points
