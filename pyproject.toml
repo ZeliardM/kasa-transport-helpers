@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = [ "setuptools>=77.0.3" ]
+requires = [ "setuptools" ]
 
 [project]
 name = "kasa-transport-helpers"
@@ -11,13 +11,12 @@ license = "Apache-2.0"
 authors = [
   { name = "Robert L. Morren, Jr.", email = "ZeliardM@gmail.com" },
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
   "Natural Language :: English",
   "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -26,6 +25,10 @@ classifiers = [
 ]
 
 dependencies = [
+  "asn1crypto",
+  "cryptography",
+  "ecdsa",
+  "requests",
 ]
 urls."Bug Tracker" = "https://github.com/ZeliardM/kasa-transport-helpers/issues"
 urls.Changelog = "https://github.com/ZeliardM/kasa-transport-helpers/blob/main/CHANGELOG.md"
@@ -34,8 +37,13 @@ urls.repository = "https://github.com/ZeliardM/kasa-transport-helpers"
 [dependency-groups]
 dev = [
   "coverage",
-  "pytest>=9,<10",
-  "pytest-cov>=7,<8",
+  "mypy",
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "ruff",
+  "types-requests",
+  "uv",
 ]
 
 [tool.ruff]
