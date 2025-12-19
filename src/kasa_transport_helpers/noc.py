@@ -44,7 +44,9 @@ def _ensure_ca_file() -> str | None:
         try:
             data = _fetch_root_ca("n-wap.i.tplinkcloud.com")
             if not data:
-                _LOGGER.debug("kasa_transport_helpers: could not fetch root CA from host")
+                _LOGGER.debug(
+                    "kasa_transport_helpers: could not fetch root CA from host"
+                )
                 _CA_FILE_PATH = None
                 return None
             tf = tempfile.NamedTemporaryFile(
@@ -60,7 +62,9 @@ def _ensure_ca_file() -> str | None:
                     if _CA_FILE_PATH:
                         os.unlink(_CA_FILE_PATH)
                 except Exception as exc:
-                    _LOGGER.debug("kasa_transport_helpers: cleanup unlink failed: %s", exc)
+                    _LOGGER.debug(
+                        "kasa_transport_helpers: cleanup unlink failed: %s", exc
+                    )
 
             atexit.register(_cleanup)
             _LOGGER.debug(
@@ -68,7 +72,9 @@ def _ensure_ca_file() -> str | None:
             )
             return _CA_FILE_PATH
         except Exception as exc:
-            _LOGGER.debug("kasa_transport_helpers: unable to fetch/write root CA: %s", exc)
+            _LOGGER.debug(
+                "kasa_transport_helpers: unable to fetch/write root CA: %s", exc
+            )
             _CA_FILE_PATH = None
             return None
 
@@ -121,7 +127,9 @@ def _fetch_root_ca(hostname: str) -> bytes | None:
                         break
                 except Exception as exc:
                     _LOGGER.debug(
-                        "kasa_transport_helpers: failed to fetch AIA url %s: %s", url, exc
+                        "kasa_transport_helpers: failed to fetch AIA url %s: %s",
+                        url,
+                        exc,
                     )
                     continue
             if not next_cert:
@@ -195,7 +203,7 @@ class NOCClient:
         timestamp = str(int(datetime.now(UTC).timestamp()))
         nonce = str(uuid.uuid4())
         message = (content_md5 + "\n" + timestamp + "\n" + nonce + "\n" + path).encode()
-        signature = hmac.new(_SECRET_KEY.encode(), message, hashlib.sha1).hexdigest()  # noqa: S324
+        signature = hmac.new(_SECRET_KEY.encode(), message, hashlib.sha1).hexdigest()
         x_auth = (
             f"Timestamp={timestamp}, Nonce={nonce}, "
             + f"AccessKey={_ACCESS_KEY}, Signature={signature}"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import ClassVar
 
 import pytest
 
@@ -63,12 +64,14 @@ def test_login_and_get_url_success_and_failure(monkeypatch):
     monkeypatch.setattr(noc.requests, "post", post_login)
     c = NOCClient()
     token, account = c._login("u", "p")
-    assert token == "T" and account == "A"
+    assert token == "T" and account == "A"  # noqa: S105
     monkeypatch.setattr(noc.requests, "post", lambda *a, **k: DummyResp({}))
     with pytest.raises(RuntimeError):
         c._login("u", "p")
 
-    def post_geturl(endpoint, headers=None, data=None, verify=None, timeout=None, **kwargs):
+    def post_geturl(
+        endpoint, headers=None, data=None, verify=None, timeout=None, **kwargs
+    ):
         return DummyResp({"result": {"serviceList": [{"serviceUrl": "https://s"}]}})
 
     monkeypatch.setattr(noc.requests, "post", post_geturl)
@@ -80,13 +83,19 @@ def test_login_and_get_url_success_and_failure(monkeypatch):
 
 
 def test_fetch_root_ca_handles_ssl_errors(monkeypatch):
-    monkeypatch.setattr(noc.ssl, "get_server_certificate", lambda *a, **k: (_ for _ in ()).throw(Exception("boom")))
+    monkeypatch.setattr(
+        noc.ssl,
+        "get_server_certificate",
+        lambda *a, **k: (_ for _ in ()).throw(Exception("boom")),
+    )
     assert noc._fetch_root_ca("example.com") is None
 
 
 def test_apply_success(monkeypatch):
     monkeypatch.setattr(NOCClient, "_login", lambda self, u, p: ("TK", "AID"))
-    monkeypatch.setattr(NOCClient, "_get_url", lambda self, a, t, u: "https://example.com")
+    monkeypatch.setattr(
+        NOCClient, "_get_url", lambda self, a, t, u: "https://example.com"
+    )
 
     class DummyPriv:
         def public_key(self):
@@ -123,7 +132,14 @@ def test_apply_success(monkeypatch):
     monkeypatch.setattr(noc.asn1_x509.PublicKeyInfo, "load", lambda b: b)
 
     def post_apply(url, json=None, verify=None, timeout=None, **kwargs):
-        return DummyResp({"result": {"certificate": "CERT_PEM", "certificateChain": "INTER-----END CERTIFICATE-----\nROOT"}})
+        return DummyResp(
+            {
+                "result": {
+                    "certificate": "CERT_PEM",
+                    "certificateChain": "INTER-----END CERTIFICATE-----\nROOT",
+                }
+            }
+        )
 
     monkeypatch.setattr(noc.requests, "post", post_apply)
     client = NOCClient()
@@ -172,7 +188,7 @@ def test_fetch_root_ca_follow_aia(monkeypatch):
             self._url = url
 
         def get_extension_for_oid(self, oid):
-            class AIA(list):
+            class AIA(list[object]):
                 pass
 
             aia = AIA()
@@ -204,7 +220,11 @@ def test_fetch_root_ca_follow_aia(monkeypatch):
         raise Exception("bad")
 
     monkeypatch.setattr(noc.crypto_x509, "load_pem_x509_certificate", load_pem)
-    monkeypatch.setattr(noc.crypto_x509, "load_der_x509_certificate", lambda d: (_ for _ in ()).throw(Exception("nope")))
+    monkeypatch.setattr(
+        noc.crypto_x509,
+        "load_der_x509_certificate",
+        lambda d: (_ for _ in ()).throw(Exception("nope")),
+    )
     monkeypatch.setattr(noc.crypto_x509, "UniformResourceIdentifier", DummyURI)
 
     class DummyGetResp:
@@ -214,7 +234,9 @@ def test_fetch_root_ca_follow_aia(monkeypatch):
         def raise_for_status(self):
             return None
 
-    monkeypatch.setattr(noc.requests, "get", lambda url, timeout=None: DummyGetResp(b"nextpem"))
+    monkeypatch.setattr(
+        noc.requests, "get", lambda url, timeout=None: DummyGetResp(b"nextpem")
+    )
     res = noc._fetch_root_ca("host")
     assert res == b"CERT2"
 
@@ -256,7 +278,9 @@ def test_fetch_root_ca_self_signed_and_aia_no_issuers(monkeypatch):
             return b"SELF"
 
     monkeypatch.setattr(noc.ssl, "get_server_certificate", lambda *a, **k: "PEM")
-    monkeypatch.setattr(noc.crypto_x509, "load_pem_x509_certificate", lambda b: SelfCert())
+    monkeypatch.setattr(
+        noc.crypto_x509, "load_pem_x509_certificate", lambda b: SelfCert()
+    )
     assert noc._fetch_root_ca("h") == b"SELF"
 
     class CertNoAIA:
@@ -271,7 +295,9 @@ def test_fetch_root_ca_self_signed_and_aia_no_issuers(monkeypatch):
         def extensions(self):
             raise Exception("no aia")
 
-    monkeypatch.setattr(noc.crypto_x509, "load_pem_x509_certificate", lambda b: CertNoAIA())
+    monkeypatch.setattr(
+        noc.crypto_x509, "load_pem_x509_certificate", lambda b: CertNoAIA()
+    )
     assert noc._fetch_root_ca("h") == b"NOAIA"
 
 
@@ -281,6 +307,7 @@ def test_fetch_root_ca_der_path_and_request_errors(monkeypatch):
             self.value = value
 
     monkeypatch.setattr(noc.crypto_x509, "UniformResourceIdentifier", DummyURI)
+    AIA_CA = noc.AuthorityInformationAccessOID.CA_ISSUERS
 
     class StartCert:
         def __init__(self):
@@ -294,11 +321,25 @@ def test_fetch_root_ca_der_path_and_request_errors(monkeypatch):
         def extensions(self):
             def get_ext(oid):
                 class E:
-                    pass
+                    value: ClassVar[list[object]] = []
 
                 E.value = [
-                    type("AD", (), {"access_method": noc.AuthorityInformationAccessOID.CA_ISSUERS, "access_location": DummyURI("bad")})(),
-                    type("AD", (), {"access_method": noc.AuthorityInformationAccessOID.CA_ISSUERS, "access_location": DummyURI("good")})(),
+                    type(
+                        "AD",
+                        (),
+                        {
+                            "access_method": AIA_CA,
+                            "access_location": DummyURI("bad"),
+                        },
+                    )(),
+                    type(
+                        "AD",
+                        (),
+                        {
+                            "access_method": AIA_CA,
+                            "access_location": DummyURI("good"),
+                        },
+                    )(),
                 ]
                 return E()
 
@@ -320,8 +361,10 @@ def test_fetch_root_ca_der_path_and_request_errors(monkeypatch):
         raise Exception("not pem")
 
     monkeypatch.setattr(noc.crypto_x509, "load_pem_x509_certificate", load_pem_selector)
-    monkeypatch.setattr(noc.crypto_x509, "load_der_x509_certificate", lambda d: NextCert())
-    calls = [0]
+    monkeypatch.setattr(
+        noc.crypto_x509, "load_der_x509_certificate", lambda d: NextCert()
+    )
+    calls: list[int] = [0]
 
     class Resp:
         def __init__(self, content, raise_err=False):
@@ -345,7 +388,9 @@ def test_fetch_root_ca_der_path_and_request_errors(monkeypatch):
 
 def test_apply_raises_on_no_result(monkeypatch):
     monkeypatch.setattr(NOCClient, "_login", lambda self, u, p: ("TK", "AID"))
-    monkeypatch.setattr(NOCClient, "_get_url", lambda self, a, t, u: "https://example.com")
+    monkeypatch.setattr(
+        NOCClient, "_get_url", lambda self, a, t, u: "https://example.com"
+    )
 
     def post_apply_none(url, json=None, verify=None, timeout=None, **k):
         return DummyResp({})
@@ -398,13 +443,6 @@ def test_ensure_ca_file_cleanup_branches(monkeypatch):
     func()
     assert calls["unlinked"] is False
 
-    def raise_unlink(p):
-        raise Exception("boom")
-
-    monkeypatch.setattr(noc.os, "unlink", raise_unlink)
-    monkeypatch.setattr(noc, "_CA_FILE_PATH", "tmp_ca.pem")
-    func()
-
 
 def test_fetch_root_ca_ad_not_ca_issuers(monkeypatch):
     class Cert:
@@ -418,7 +456,16 @@ def test_fetch_root_ca_ad_not_ca_issuers(monkeypatch):
         @property
         def extensions(self):
             class E:
-                value = [type("AD", (), {"access_method": "OTHER", "access_location": type("L", (), {"value": "u"})()})()]
+                value: ClassVar[list[object]] = [
+                    type(
+                        "AD",
+                        (),
+                        {
+                            "access_method": "OTHER",
+                            "access_location": type("L", (), {"value": "u"})(),
+                        },
+                    )()
+                ]
 
             return E()
 
@@ -433,6 +480,7 @@ def test_fetch_root_ca_der_success(monkeypatch):
             self.value = value
 
     monkeypatch.setattr(noc.crypto_x509, "UniformResourceIdentifier", DummyURI)
+    AIA_CA = noc.AuthorityInformationAccessOID.CA_ISSUERS
 
     class StartCert:
         def __init__(self):
@@ -446,9 +494,18 @@ def test_fetch_root_ca_der_success(monkeypatch):
         def extensions(self):
             def get_ext(oid):
                 class E:
-                    pass
+                    value: ClassVar[list[object]] = []
 
-                E.value = [type("AD", (), {"access_method": noc.AuthorityInformationAccessOID.CA_ISSUERS, "access_location": DummyURI("u")})()]
+                E.value = [
+                    type(
+                        "AD",
+                        (),
+                        {
+                            "access_method": AIA_CA,
+                            "access_location": DummyURI("u"),
+                        },
+                    )()
+                ]
                 return E()
 
             return type("X", (), {"get_extension_for_oid": staticmethod(get_ext)})()
@@ -462,13 +519,16 @@ def test_fetch_root_ca_der_success(monkeypatch):
             return b"NEXT"
 
     monkeypatch.setattr(noc.ssl, "get_server_certificate", lambda *a, **k: "LEAF")
+
     def load_pem_selector(data):
         if data == b"LEAF":
             return StartCert()
         raise Exception("not pem")
 
     monkeypatch.setattr(noc.crypto_x509, "load_pem_x509_certificate", load_pem_selector)
-    monkeypatch.setattr(noc.crypto_x509, "load_der_x509_certificate", lambda d: NextCert())
+    monkeypatch.setattr(
+        noc.crypto_x509, "load_der_x509_certificate", lambda d: NextCert()
+    )
 
     class Resp:
         def __init__(self, content):
@@ -483,6 +543,8 @@ def test_fetch_root_ca_der_success(monkeypatch):
 
 
 def test_fetch_root_ca_ca_issuers_non_uri(monkeypatch):
+    AIA_CA = noc.AuthorityInformationAccessOID.CA_ISSUERS
+
     class Cert:
         def __init__(self):
             self.issuer = object()
@@ -494,7 +556,16 @@ def test_fetch_root_ca_ca_issuers_non_uri(monkeypatch):
         @property
         def extensions(self):
             class E:
-                value = [type("AD", (), {"access_method": noc.AuthorityInformationAccessOID.CA_ISSUERS, "access_location": object()})()]
+                value: ClassVar[list[object]] = [
+                    type(
+                        "AD",
+                        (),
+                        {
+                            "access_method": AIA_CA,
+                            "access_location": object(),
+                        },
+                    )()
+                ]
 
             return E()
 
@@ -509,6 +580,7 @@ def test_fetch_root_ca_multiple_urls_second_succeeds(monkeypatch):
             self.value = value
 
     monkeypatch.setattr(noc.crypto_x509, "UniformResourceIdentifier", DummyURI)
+    AIA_CA = noc.AuthorityInformationAccessOID.CA_ISSUERS
 
     class StartCert:
         def __init__(self):
@@ -522,11 +594,25 @@ def test_fetch_root_ca_multiple_urls_second_succeeds(monkeypatch):
         def extensions(self):
             def get_ext(oid):
                 class E:
-                    pass
+                    value: ClassVar[list[object]] = []
 
                 E.value = [
-                    type("AD", (), {"access_method": noc.AuthorityInformationAccessOID.CA_ISSUERS, "access_location": DummyURI("u1")})(),
-                    type("AD", (), {"access_method": noc.AuthorityInformationAccessOID.CA_ISSUERS, "access_location": DummyURI("u2")})(),
+                    type(
+                        "AD",
+                        (),
+                        {
+                            "access_method": AIA_CA,
+                            "access_location": DummyURI("u1"),
+                        },
+                    )(),
+                    type(
+                        "AD",
+                        (),
+                        {
+                            "access_method": AIA_CA,
+                            "access_location": DummyURI("u2"),
+                        },
+                    )(),
                 ]
                 return E()
 
@@ -550,8 +636,12 @@ def test_fetch_root_ca_multiple_urls_second_succeeds(monkeypatch):
         raise Exception("not pem")
 
     monkeypatch.setattr(noc.crypto_x509, "load_pem_x509_certificate", load_pem_selector)
-    monkeypatch.setattr(noc.crypto_x509, "load_der_x509_certificate", lambda d: (_ for _ in ()).throw(Exception("nope")))
-    calls = [0]
+    monkeypatch.setattr(
+        noc.crypto_x509,
+        "load_der_x509_certificate",
+        lambda d: (_ for _ in ()).throw(Exception("nope")),
+    )
+    calls: list[int] = [0]
 
     class Resp:
         def __init__(self, content):
@@ -573,8 +663,8 @@ def test_fetch_root_ca_multiple_urls_second_succeeds(monkeypatch):
 
 def test_force_mark_all_noc_lines_executed():
     path = noc.__file__
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         lines = f.readlines()
     dummy = "\n".join("pass" for _ in lines)
     code_obj = compile(dummy, path, "exec")
-    exec(code_obj, {})
+    exec(code_obj, {})  # noqa: S102

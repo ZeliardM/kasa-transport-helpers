@@ -9,16 +9,21 @@ import kasa_transport_helpers.spake as spake
 from kasa_transport_helpers import get_curve_and_points
 
 
-@pytest.mark.parametrize("suite_type,expected_curve", [
-    (1, NIST256p),
-    (2, NIST256p),
-    (8, NIST256p),
-    (9, NIST256p),
-    (3, NIST384p),
-    (4, NIST384p),
-    (5, NIST521p),
-])
-def test_get_curve_and_points_returns_expected_curve_and_bytes(suite_type, expected_curve):
+@pytest.mark.parametrize(
+    "suite_type,expected_curve",
+    [
+        (1, NIST256p),
+        (2, NIST256p),
+        (8, NIST256p),
+        (9, NIST256p),
+        (3, NIST384p),
+        (4, NIST384p),
+        (5, NIST521p),
+    ],
+)
+def test_get_curve_and_points_returns_expected_curve_and_bytes(
+    suite_type, expected_curve
+):
     curve, m, n = get_curve_and_points(suite_type)
     assert curve == expected_curve
     assert isinstance(m, bytes) and len(m) > 0
