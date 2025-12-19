@@ -46,7 +46,11 @@ Install this via pip (or your favourite package manager):
 Start by importing it:
 
 ```python
-import kasa_transport_helpers
+from kasa_transport_helpers import NOCClient, TPAPNOCData, get_curve_and_points
+
+client = NOCClient()
+noc_data: TPAPNOCData = client.apply("user@example.com", "password")
+nist, m, n = get_curve_and_points(2)
 ```
 
 ## Contributors ✨
