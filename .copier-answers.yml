@@ -1,0 +1,22 @@
+# Changes here will be overwritten by Copier
+_commit: 11158f1
+_src_path: gh:browniebroke/pypackage-template
+add_me_as_contributor: false
+copyright_year: '2025'
+documentation: false
+email: ZeliardM@gmail.com
+full_name: Robert L. Morren, Jr.
+github_username: ZeliardM
+has_cli: false
+initial_commit: true
+is_django_package: false
+open_source_license: Apache-2.0
+open_with_editor: false
+package_name: kasa_transport_helpers
+project_name: kasa-transport-helpers
+project_short_description: Transport helpers for python-kasa
+project_slug: kasa-transport-helpers
+run_uv_sync: true
+setup_github: true
+setup_pre_commit: true
+
